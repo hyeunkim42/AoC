@@ -40,6 +40,30 @@ function findChecksum(boxIDs: string[]): number {
 	return twoTimes * threeTimes;
 }
 
+function findCorrectID(boxIDs:string[]): string {
+	for (let i = 0; i < boxIDs.length; i++) {
+		for (let j = i + 1; j < boxIDs.length; j++) {
+			let diffCount = 0;
+			let commonLetter = '';
+			for (let idx = 0; idx < boxIDs[i].length; idx++) {
+				if (boxIDs[i][idx] != boxIDs[j][idx]) {
+					diffCount++;
+				} else {
+					commonLetter += (boxIDs[i][idx]);
+				}
+				if (diffCount > 1) {
+					break ;
+				}
+			}
+			if (diffCount == 1) {
+				return commonLetter;
+			}
+		}
+	}
+	return '';
+}
+
 const fileContent =  readFile('inputs/day02.txt');
 
 console.log(findChecksum(fileContent));
+console.log(findCorrectID(fileContent));
