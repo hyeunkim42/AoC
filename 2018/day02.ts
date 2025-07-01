@@ -1,69 +1,55 @@
-import { readFileSync } from 'node:fs';
+export function day2_part1(input: string): number {
+	const ids = input.split("\n");
 
-function readFile(filepath: string, encoding = 'utf8'): string[] {
-	try {
-		return readFileSync(filepath, 'utf8').split('\r\n');
-	} catch (error) {
-		console.error(`Error on reading ${filepath}`, error);
-		return [];
-	}
-}
-
-function findChecksum(boxIDs: string[]): number {
-	let twoTimes: number = 0;
-	let threeTimes: number = 0;
-	for (let ID of boxIDs) {
-		let scrambled = new Set();
-		let twice = new Set();
-		let triple = new Set();
-		let manyTimes = new Set();
-		for (let char of ID) {
-			if (!scrambled.has(char)) {
-				scrambled.add(char);
+	let two: number = 0;
+	let three: number = 0;
+	for (let id of ids) {
+		let scrambled: Set<string> = new Set();
+		let double: Set<string> = new Set();
+		let triple: Set<string> = new Set();
+		let manyTimes: Set<string> = new Set();
+		for (let c of id) {
+			if (!scrambled.has(c)) {
+				scrambled.add(c);
+			} else if (double.has(c)) {
+				double.delete(c);
+				triple.add(c);
+			} else if (triple.has(c)) {
+				triple.delete(c);
+				manyTimes.add(c);
 			} else {
-				if (twice.has(char)) {
-					twice.delete(char);
-					triple.add(char);
-				} else if (triple.has(char)) {
-					triple.delete(char);
-					manyTimes.add(char);
-				} else {
-					twice.add(char);
-				}
+				double.add(c);
 			}
 		}
-		if (twice.size)
-			twoTimes++;
-		if (triple.size)
-			threeTimes++;
+		if (double.size) two++;
+		if (triple.size) three++;
 	}
-	return twoTimes * threeTimes;
+	return two * three;
 }
 
-function findCorrectID(boxIDs:string[]): string {
-	for (let i = 0; i < boxIDs.length; i++) {
-		for (let j = i + 1; j < boxIDs.length; j++) {
+export function day2_part2(input: string): string {
+	let ids = input.split("\n");
+
+	for (const [i, id1] of ids.entries()) {
+		for (const [j, id2] of ids.entries()) {
+			if (i >= j) continue;
+			if (id1.length != id2.length) continue;
+
 			let diffCount = 0;
-			let commonLetter = '';
-			for (let idx = 0; idx < boxIDs[i].length; idx++) {
-				if (boxIDs[i][idx] != boxIDs[j][idx]) {
+			let common = "";
+
+			for (let idx = 0; idx < id1.length; idx++) {
+				if (id1.at(idx) != id2.at(idx)) {
 					diffCount++;
 				} else {
-					commonLetter += (boxIDs[i][idx]);
+					common += id1.at(idx);
 				}
-				if (diffCount > 1) {
-					break ;
-				}
+				if (diffCount > 1)
+					break;
 			}
-			if (diffCount == 1) {
-				return commonLetter;
-			}
+			if (diffCount == 1)
+				return common;
 		}
 	}
-	return '';
+	return "not found";
 }
-
-const fileContent =  readFile('inputs/day02.txt');
-
-console.log(findChecksum(fileContent));
-console.log(findCorrectID(fileContent));
