@@ -1,26 +1,29 @@
-import * as fs from 'fs';
+export function day1(input: string) {
+	const data = input.split('\n');
+	const nums = data.map(line => parseInt(line, 10));
 
-fs.readFile('inputs/day01.txt', 'utf-8', (err, input)=>{
-	if (err) {
-		console.log("Error reading file: ", err);
-		return ;
-	}
-	let data:string[] = input.split('\r\n');
-	let nums = data.map(line => parseInt(line, 10));
-	let ans1: number = nums.reduce((acc, val) => acc + val, 0);
-	console.log("ans1 is:", ans1);
+	return nums.reduce((acc, val) => acc + val, 0);
+}
 
-	let frequencies: Set<number> = new Set([0]);
-	console.log(frequencies);
+export function day1_part2(input: string) {
+	const data = input.split('\n');
+	const nums = data.map(line => parseInt(line, 10));
+
+	const frequencies: Set<number> = new Set([0]);
 	let freq: number = 0;
-	while (true) {
+	let current = 0;
+	const timeout = 1000000;
+	while (current < timeout) {
+		current++;
+
 		for (let val of nums) {
 			freq += val;
 			if (frequencies.has(freq)) {
-				console.log("first frequency twice reached: ", freq);
-				return ;
+				return freq;
 			}
 			frequencies.add(freq);
 		}
 	}
-})
+
+	throw Error("no!")
+}
