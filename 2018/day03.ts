@@ -45,32 +45,29 @@ export function day3_part2(input: string): number {
 	const data: string[] = input.split("\n");
 
 	let area: Map<string, number> = new Map();
+	let ids: Set<number> = new Set();
+	let clash: Set<number> = new Set();
 	for (const line of data) {
 		const fabricArea = parseSquare(line);
 
+		ids.add(fabricArea.id);
 		for (let dx = 0; dx < fabricArea.width; dx++) {
 			for (let dy = 0; dy < fabricArea.height; dy++) {
 				const currCoord = `${fabricArea.startX + dx},${fabricArea.startY + dy}`;
 				let count: number = area.get(currCoord) || 0;
 
-				area.set(currCoord, count + 1);
+				if (count === 0) {
+					area.set(currCoord, fabricArea.id);
+				} else if (count > 0) {
+					clash.add(count);
+					clash.add(fabricArea.id);
+					area.set(currCoord, -1);
+				} else {
+					clash.add(fabricArea.id);
+				}
 			}
 		}
 	}
-	for (const line of data) {
-		const fabricArea = parseSquare(line);
-
-		let isSeparate = true;
-		for (let dx = 0; dx < fabricArea.width; dx++) {
-			for (let dy = 0; dy < fabricArea.height; dy++) {
-				const currCoord = `${fabricArea.startX + dx},${fabricArea.startY + dy}`;
-				const claim : number = area.get(currCoord) || 0;
-				if (claim > 1)
-					isSeparate = false;
-			}
-		}
-		if (isSeparate)
-			return fabricArea.id;
-	}
-	return 0;
+	let nonClash = ids.difference(clash);
+	return nonClash.values().next().value || 0;
 }
