@@ -2,14 +2,14 @@
 // What minute does that guard spend asleep the most?
 type GuardInfo = {
 	accLen: number,
-	sleepMap: Array<number>
+	sleepMap: Map<number, number>
 };
 
 function addNewGuard(guards: Map<number, GuardInfo>, id: number) {
 	if (!guards.has(id)) {
 		let guard: GuardInfo = {
 			accLen : 0,
-			sleepMap : new Array<number>(60).fill(0)
+			sleepMap : new Map<number, number>()
 		}
 		guards.set(id, guard);
 	}
@@ -17,16 +17,22 @@ function addNewGuard(guards: Map<number, GuardInfo>, id: number) {
 }
 
 function recordSleep(guards: Map<number, GuardInfo>, id: number, start: number, end: number) {
-	if (!guards.has(id))
-		return;
 	let guard = guards.get(id);
-	if (typeof guard === 'object') {
-		for (let i = start; i < end; i++) {
-			guard.sleepMap[i]++;
+	if (typeof guard === "undefined") {
+		throw new Error(`Guard ${id} not found`);
+	} else {
+		let sleepMap = guard.sleepMap;
+		if (typeof sleepMap === "undefined") {
+			throw new Error(`Guard ${id} does not have sleep map`);
+		} else {
+			for (let i = start; i < end; i++) {
+				const count = guard.sleepMap.get(i) || 0;
+				guard.sleepMap.set(i, count + 1);
+			}
 		}
+		guard.accLen += end;
+		guard.accLen -= start;
 	}
-	guard.accLen += end;
-	guard.accLen -= start;
 }
 
 export function day4_part1(input: string) {
@@ -55,12 +61,16 @@ export function day4_part1(input: string) {
 			mostSlept = id;
 			sleeplength = value.accLen;
 			for (let i = 0; i < 60; i++) {
-				if (value.sleepMap.at(i) > repTime){
-					repTime = value.sleepMap.at(i);
+				if (value.sleepMap.get(i) || 0 > repTime){
+					repTime = value.sleepMap.get(i) || 0;
 					mostCommon = i;
 				}
 			}
 		}
 	})
 	return mostSlept * mostCommon ;
+}
+
+export function day4_part2(input: string) {
+	return 0;
 }
