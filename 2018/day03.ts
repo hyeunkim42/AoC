@@ -1,73 +1,84 @@
-type fabricArea = {
-	id: number,
-	startX: number,
-	startY: number,
-	width: number,
-	height: number
-}
+import invariant from "./invariant";
 
-function parseSquare(input: string): fabricArea {
-	let fabricArea: fabricArea = {
-		id: parseInt(input.slice(input.indexOf("#") + 1, input.indexOf("@"))),
-		startX: parseInt(input.slice(input.indexOf("@") + 1, input.indexOf(","))),
-		startY: parseInt(input.slice(input.indexOf(",") + 1, input.indexOf(":"))),
-		width: parseInt(input.slice(input.indexOf(":") + 1, input.indexOf("x"))),
-		height: parseInt(input.slice(input.indexOf("x") + 1))
+type FabricArea = {
+	id: string;
+	start: { x: number; y: number };
+	size: { width: number; height: number };
+};
+
+type Point = `${number},${number}`;
+
+// Parse a single line into structured data
+const parseLine = (line: string): FabricArea => {
+	const match = line.match(/#(\d+) @ (\d+),(\d+): (\d+)x(\d+)/);
+	invariant(match !== null, line);
+
+	const [, id, x, y, width, height] = match;
+
+	invariant(id !== undefined, line)
+	invariant(x !== undefined, line)
+	invariant(y !== undefined, line)
+	invariant(width !== undefined, line)
+	invariant(height !== undefined, line)
+
+	return {
+		id,
+		start: { x: parseInt(x), y: parseInt(y) },
+		size: { width: parseInt(width), height: parseInt(height) }
+	};
+};
+
+// Generate all points within a rectangle as string keys
+const pointsOf = ({ start, size }: FabricArea): Point[] =>
+	Array.from({ length: size.width }, (_, dx) =>
+		Array.from({ length: size.height }, (_, dy) =>
+			`${start.x + dx},${start.y + dy}` as Point
+		)
+	).flat();
+
+// Count frequency of each point
+const frequencies = (items: Point[]): Map<Point, number> => {
+	const freq = new Map<Point, number>();
+	for (const item of items) {
+		freq.set(item, (freq.get(item) ?? 0) + 1);
 	}
-	return fabricArea;
-}
+	return freq;
+};
 
-export function day3_part1(input: string) {
-	const data = input.split("\n");
+// Part 1: Count overlapping area
+const answer1 = (input: string[]): number => {
+	const allPoints = input
+		.map(parseLine)
+		.flatMap(pointsOf);
 
-	let area: Map<string, number> = new Map();
-	let commonArea: number = 0;
+	const freq = frequencies(allPoints);
+	return Array.from(freq.values()).filter(count => count >= 2).length;
+};
 
-	for (let line of data) {
-		const fabricArea = parseSquare(line);
+// Part 2: Find non-overlapping square
+const answer2 = (input: string[]): string => {
+	const squares = input
+		.map(line => {
+			const area = parseLine(line);
+			return { id: area.id, points: pointsOf(area) }
+		});
 
-		for (let dx = 0; dx < fabricArea.width; dx++) {
-			for (let dy = 0; dy < fabricArea.height; dy++) {
-				const currCoord: string = `${fabricArea.startX + dx},${fabricArea.startY + dy}`;
-				let count: number = area.get(currCoord) || 0;
+	const freq = frequencies(squares.flatMap(s => s.points));
 
-				if (count == 1) {
-					commonArea++;
-				}
-				area.set(currCoord, count + 1);
-			}
-		}
-	}
-	return commonArea;
+	const nonOverlapping = squares.find(({ points }) =>
+		points.every(point => freq.get(point) === 1)
+
+	);
+
+	return nonOverlapping?.id ?? '';
+};
+
+// Exported interface
+export function day3_part1(input: string): number {
+	return answer1(input.trim().split('\n'));
 }
 
 export function day3_part2(input: string): number {
-	const data: string[] = input.split("\n");
-
-	let area: Map<string, number> = new Map();
-	let ids: Set<number> = new Set();
-	let clash: Set<number> = new Set();
-	for (const line of data) {
-		const fabricArea = parseSquare(line);
-
-		ids.add(fabricArea.id);
-		for (let dx = 0; dx < fabricArea.width; dx++) {
-			for (let dy = 0; dy < fabricArea.height; dy++) {
-				const currCoord = `${fabricArea.startX + dx},${fabricArea.startY + dy}`;
-				let count: number = area.get(currCoord) || 0;
-
-				if (count === 0) {
-					area.set(currCoord, fabricArea.id);
-				} else if (count > 0) {
-					clash.add(count);
-					clash.add(fabricArea.id);
-					area.set(currCoord, -1);
-				} else {
-					clash.add(fabricArea.id);
-				}
-			}
-		}
-	}
-	let nonClash = ids.difference(clash);
-	return nonClash.values().next().value || 0;
+	const result = answer2(input.trim().split('\n'));
+	return parseInt(result, 10);
 }
