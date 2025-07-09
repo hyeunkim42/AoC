@@ -19,4 +19,21 @@ export function day5_part1(input: string) {
 	} while (prevLength !== input.length)
 
 	return input.length;
+} // 3.42s
+
+export function day5_part1_m2(input:string) {
+	let stack: string[] = [];
+	for (let c of input) {
+		const last = stack.at(stack.length - 1);
+		if (last && last !== c && last.toLowerCase() === c.toLowerCase()) {
+			stack.pop();
+		} else {
+			stack.push(c);
+		}
+	}
+	return stack.length;
+} //11.47ms
+
+export function day5_part2(input: string) {
+	return 0;
 }
