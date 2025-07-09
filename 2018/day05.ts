@@ -1,58 +1,46 @@
-function reactPolymerMethod1(input: string) {
-	const lowerUpper = Array.from({ length: 26 }, (_, i) => {
-		const lower = String.fromCharCode(97 + i);
-		const upper = String.fromCharCode(65 + i);
-		return `${lower}${upper}`;
-	})
-	const upperLower = Array.from({ length: 26 }, (_, i) => {
-		const upper = String.fromCharCode(65 + i);
-		const lower = String.fromCharCode(97 + i);
-		return `${upper}${lower}`
-	})
-	const pattern = [...lowerUpper, ...upperLower];
-	const regexp = new RegExp(pattern.join("|"), "");
-
-	let prevLength = input.length;
-	do {
-		prevLength = input.length;
-		input = input.replace(regexp, "");
-	} while (prevLength !== input.length)
-
-	return input;
+// Key insight from Clojure: use ASCII difference to detect reactive pairs
+function canReact(a: string, b: string): boolean {
+  return Math.abs(a.charCodeAt(0) - b.charCodeAt(0)) === 32;
 }
 
-function reactPolymerMethod2(input: string) {
-	let stack: string[] = [];
-	for (let char of input) {
-		const last = stack.at(stack.length - 1);
-		if (last && last !== char && last.toLowerCase() === char.toLowerCase()) {
-			stack.pop();
-		} else {
-			stack.push(char);
-		}
-	}
-	return stack.join('');
+function reactPolymer(input: string): string {
+  const stack: string[] = [];
+  
+  for (const char of input) {
+    const last = stack[stack.length - 1];
+    if (last && canReact(last, char)) {
+      stack.pop();
+    } else {
+      stack.push(char);
+    }
+  }
+  
+  return stack.join('');
 }
 
-export function day5_part1(input: string) {
-	// const result1 = reactPolymerMethod1(input); // 3.42s
-	const result2 = reactPolymerMethod2(input); // 11.47ms
-	// console.log(result2);
-	return result2.length;
+// Helper function to remove all instances of a character (both cases)
+function removeChar(input: string, char: string): string {
+  const lower = char.toLowerCase();
+  const upper = char.toUpperCase();
+  
+  return Array.from(input)
+    .filter(c => c !== lower && c !== upper)
+    .join('');
 }
 
-export function day5_part2(input: string) {
-	let minLen = input.length;
-	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export function day5_part1(input: string): number {
+  return reactPolymer(input).length;
+}
 
-	for (const c of alphabet) {
-		const pattern = c + "|" + c.toLowerCase();
-		const regexp = new RegExp(pattern, "g");
-		const removedstring = input.replace(regexp, "");
-		const fullyReactedString = reactPolymerMethod2(removedstring);
-
-		if (minLen > fullyReactedString.length)
-			minLen = fullyReactedString.length;
-	}
-	return minLen;
+export function day5_part2(input: string): number {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+  let minLength = input.length;
+  
+  for (const char of alphabet) {
+    const filtered = removeChar(input, char);
+    const reacted = reactPolymer(filtered);
+    minLength = Math.min(minLength, reacted.length);
+  }
+  
+  return minLength;
 }
