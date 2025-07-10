@@ -7,7 +7,7 @@ test("day3 part1 test", async() => {
 })
 
 test("day3 part1 real", async() => {
-	const input = await fs.readFile("inputs/day03.txt", "utf-8");
+	const input = await fs.readFile("./2018/inputs/day03.txt", "utf-8");
 
 	expect(day3_part1(input)).toBe(116491);
 })
@@ -17,7 +17,7 @@ test("day3 part2 test", async() => {
 })
 
 test("day3 part2 real", async() => {
-	const input = await fs.readFile("inputs/day03.txt", "utf-8");
+	const input = await fs.readFile("./2018/inputs/day03.txt", "utf-8");
 
 	expect(day3_part2(input)).toBe(707);
 })
