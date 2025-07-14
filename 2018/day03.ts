@@ -1,73 +1,74 @@
-type fabricArea = {
+import invariant from "./invariant";
+
+type FabricArea = {
 	id: number,
-	startX: number,
-	startY: number,
-	width: number,
-	height: number
+	start: { x: number, y: number },
+	size: { width: number, height: number };
 }
 
-function parseSquare(input: string): fabricArea {
-	let fabricArea: fabricArea = {
-		id: parseInt(input.slice(input.indexOf("#") + 1, input.indexOf("@"))),
-		startX: parseInt(input.slice(input.indexOf("@") + 1, input.indexOf(","))),
-		startY: parseInt(input.slice(input.indexOf(",") + 1, input.indexOf(":"))),
-		width: parseInt(input.slice(input.indexOf(":") + 1, input.indexOf("x"))),
-		height: parseInt(input.slice(input.indexOf("x") + 1))
+type Point = `${number},${number}`;
+
+// parse a single line into structured data
+const parseLine = (line: string): FabricArea => {
+	const match = line.match(/#(\d+) @(\d+),(\d+): (\d+)x(\d+)/);
+	invariant(match !== null, line);
+
+	const [, id, x, y, width, height] = match;
+	invariant(id !== undefined, line);
+	invariant(x !== undefined, line);
+	invariant(y !== undefined, line);
+	invariant(width !== undefined, line);
+	invariant(height !== undefined, line);
+
+	return {
+		id: parseInt(id),
+		start: { x: parseInt(x), y: parseInt(y) },
+		size: { width: parseInt(width), height: parseInt(height) }
 	}
-	return fabricArea;
+}
+
+const pointsOf = ({ start, size }: FabricArea): Point[] => {
+	const rows = Array.from({ length: size.width }, (_, dx) => {
+		const cols = Array.from({ length: size.height }, (_, dy) => {
+			return `${start.x + dx},${start.y + dy}` as Point;
+		});
+		return cols;
+	})
+	return rows.flat();
+}
+
+const frequencies = (items: Point[]): Map<Point, number> => {
+	const freq = new Map<Point, number>();
+	for (const item of items) {
+		freq.set(item, (freq.get(item) ?? 0) + 1);
+	}
+	return freq;
+}
+
+const answer1 = (input: string[]): number => {
+	const allPoints = input.map(parseLine).flatMap(pointsOf);
+	const frequency = frequencies(allPoints);
+	return Array.from(frequency.values()).filter(count => count >= 2).length;
+};
+
+const answer2 = (input: string[]): number => {
+	const squares = input.map(line => {
+		const area = parseLine(line);
+		return {id: area.id, points: pointsOf(area)}
+	});
+
+	const freq = frequencies(squares.flatMap(s => s.points));
+
+	const nonOverlapping = squares.find(({ points }) =>
+		points.every(point => freq.get(point) === 1)
+	);
+	return nonOverlapping?.id ?? 0;
 }
 
 export function day3_part1(input: string) {
-	const data = input.split("\n");
-
-	let area: Map<string, number> = new Map();
-	let commonArea: number = 0;
-
-	for (let line of data) {
-		const fabricArea = parseSquare(line);
-
-		for (let dx = 0; dx < fabricArea.width; dx++) {
-			for (let dy = 0; dy < fabricArea.height; dy++) {
-				const currCoord: string = `${fabricArea.startX + dx},${fabricArea.startY + dy}`;
-				let count: number = area.get(currCoord) || 0;
-
-				if (count == 1) {
-					commonArea++;
-				}
-				area.set(currCoord, count + 1);
-			}
-		}
-	}
-	return commonArea;
+	return answer1(input.trim().split("\n"));
 }
 
 export function day3_part2(input: string): number {
-	const data: string[] = input.split("\n");
-
-	let area: Map<string, number> = new Map();
-	let ids: Set<number> = new Set();
-	let clash: Set<number> = new Set();
-	for (const line of data) {
-		const fabricArea = parseSquare(line);
-
-		ids.add(fabricArea.id);
-		for (let dx = 0; dx < fabricArea.width; dx++) {
-			for (let dy = 0; dy < fabricArea.height; dy++) {
-				const currCoord = `${fabricArea.startX + dx},${fabricArea.startY + dy}`;
-				let count: number = area.get(currCoord) || 0;
-
-				if (count === 0) {
-					area.set(currCoord, fabricArea.id);
-				} else if (count > 0) {
-					clash.add(count);
-					clash.add(fabricArea.id);
-					area.set(currCoord, -1);
-				} else {
-					clash.add(fabricArea.id);
-				}
-			}
-		}
-	}
-	let nonClash = ids.difference(clash);
-	return nonClash.values().next().value || 0;
+	return answer2(input.trim().split("\n"));
 }
