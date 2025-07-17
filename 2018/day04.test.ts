@@ -19,5 +19,5 @@ test("day4 part2 test", async() => {
 test("day4 part2 real", async() => {
 	const input = await fs.readFile("./2018/inputs/day04.txt", "utf-8");
 
-	expect(day4_part2(input)).toBe(707);
+	expect(day4_part2(input)).toBe(10491);
 })

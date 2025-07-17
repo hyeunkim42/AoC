@@ -1,104 +1,99 @@
-// Find the guard that has the most minutes asleep
-// What minute does that guard spend asleep the most?
-type GuardInfo = {
-	accLen: number,
-	sleepMap: Map<number, number>
-};
+import { sleep } from "bun";
+import invariant from "./invariant";
 
-function addNewGuard(guards: Map<number, GuardInfo>, id: number) {
-	if (!guards.has(id)) {
-		let guard: GuardInfo = {
-			accLen : 0,
-			sleepMap : new Map<number, number>()
-		}
-		guards.set(id, guard);
-	}
-	return id;
+type SleepPeriod = {
+	id: number,
+	start: number,
+	end: number
 }
 
-function recordSleep(guards: Map<number, GuardInfo>, id: number, start: number, end: number) {
-	let guard = guards.get(id);
-	if (typeof guard === "undefined") {
-		throw new Error(`Guard ${id} not found`);
-	} else {
-		let sleepMap = guard.sleepMap;
-		if (typeof sleepMap === "undefined") {
-			throw new Error(`Guard ${id} does not have sleep map`);
-		} else {
-			for (let i = start; i < end; i++) {
-				const count = guard.sleepMap.get(i) || 0;
-				guard.sleepMap.set(i, count + 1);
+type GuardSleepInfo = {
+	id: number,
+	minute: number,
+	times: number
+}
+
+// parse data
+const parseId = (line: string): number =>
+	parseInt(line.match(/Guard #(\d+) begins shift/)?.[1]||'0');
+
+const parseInput = (input: string[]): Record <number, SleepPeriod[]> => {
+	let currentId = 0;
+	let sleepStart = 0;
+	const result: SleepPeriod[] = [];
+
+	input
+		.sort()
+		.forEach(line => {
+			const [, minuteStr, msg] = line.match(/\[\d{4}-\d{2}-\d{2} \d{2}:(\d{2})\] (.+)/) || [];
+			invariant(minuteStr !== undefined, "올바르지 않은 입력입니다: " + line);
+			invariant(msg !== undefined, "올바르지 않은 입력입니다: " + line);
+			const minute = parseInt(minuteStr);
+
+			if (msg === "falls asleep") {
+				sleepStart = minute;
+			} else if (msg === "wakes up") {
+				result.push({ id: currentId, start: sleepStart, end: minute });
+			} else {
+				currentId = parseId(msg);
 			}
-		}
-		guard.accLen += end;
-		guard.accLen -= start;
-	}
+		})
+
+	return Object.groupBy(result, period => period.id) as Record<number, SleepPeriod[]>;
+}
+
+const duration = ({ start, end }: SleepPeriod): number => end - start;
+
+const mostSleptGuard = (sleepRecordById: Record<number, SleepPeriod[]>): number => {
+	const sleepLengths = Object.entries(sleepRecordById)
+		.map(([id, sleepList])=>({
+			id: parseInt(id),
+			total: sleepList.map(duration).reduce((sum, dur) => sum + dur, 0)
+		}));
+	const maxLength = Math.max(...sleepLengths.map(guard => guard.total));
+	const result = sleepLengths.find(guard => guard.total === maxLength);
+	invariant(result !== undefined, "Can't identify guard who slept most");
+	return result.id;
+}
+
+const mostFrequentlySleptGuard = (sleepById: Record<number, SleepPeriod[]>): GuardSleepInfo => {
+	const guardData = Object.entries(sleepById)
+		.map(([id, sleepList]) => frequentlySlept(parseInt(id), sleepList));
+
+	const maxFrequentTime = Math.max(...guardData.map (guard => guard.times));
+	return guardData.find(guard => guard.times === maxFrequentTime)!;
+}
+
+const frequentlySlept = (id: number, sleepList: SleepPeriod[]):GuardSleepInfo => {
+	const allMinutes = sleepList.flatMap(({ start, end }) =>
+		Array.from({ length: end - start }, (_, i) => start + i)
+	);
+
+	const frequencies = allMinutes.reduce((freq, minute) => {
+		freq[minute] = (freq[minute] || 0) + 1;
+		return freq;
+	}, {} as Record<number, number>);
+
+	const maxFrequency = Math.max(...Object.values(frequencies));
+	const minute = parseInt(Object.entries(frequencies)
+		.find(([__, freq]) => freq === maxFrequency)![0]);
+	return {id, minute, times: maxFrequency};
 }
 
 export function day4_part1(input: string) {
-	const data = input.split("\n").sort();
-
-	let guards: Map<number, GuardInfo> = new Map();
-	let guardID: number = 0;
-	let start: number = 0;
-
-	for (const line of data) {
-		if (line.indexOf("#") > 0) {
-			guardID = addNewGuard(guards, parseInt(line.slice(line.indexOf("#") + 1)));
-		} else if (line.indexOf("fall") > 0){
-			start = parseInt(line.slice(line.indexOf(":") + 1));
-		} else {
-			recordSleep(guards, guardID, start, parseInt(line.slice(line.indexOf(":") + 1)));
-		}
-	}
-	// find id of most slept guard
-	let mostSlept: number = 0;
-	let sleeplength: number = 0;
-	let mostCommon: number = 0;
-	let repTime: number = 0;
-	guards.forEach((guard: GuardInfo, id: number) => {
-		if (guard.accLen > sleeplength) {
-			mostSlept = id;
-			sleeplength = guard.accLen;
-			guard.sleepMap.forEach((count: number, minute: number)=> {
-				if (repTime < count) {
-					repTime = count;
-					mostCommon = minute;
-				}
-			})
-		}
-	})
-	return mostSlept * mostCommon ;
+	// sort and parse data
+	const record = parseInput(input.split("\n"));
+	// find id of slept most via getting summation
+	const id = mostSleptGuard(record);
+	// find most slept guards most frequent sleep minute
+	const result = frequentlySlept(id, record[id] || []);
+	return id * result.minute;
 }
 
 export function day4_part2(input: string) {
-		const data = input.split("\n").sort();
-
-	let guards: Map<number, GuardInfo> = new Map();
-	let guardID: number = 0;
-	let start: number = 0;
-
-	for (const line of data) {
-		if (line.indexOf("#") > 0) {
-			guardID = addNewGuard(guards, parseInt(line.slice(line.indexOf("#") + 1)));
-		} else if (line.indexOf("fall") > 0){
-			start = parseInt(line.slice(line.indexOf(":") + 1));
-		} else {
-			recordSleep(guards, guardID, start, parseInt(line.slice(line.indexOf(":") + 1)));
-		}
-	}
-	// find id of most common minute and id
-	let mostSlept: number = 0;
-	let mostCommon: number = 0;
-	let repTime: number = 0;
-	guards.forEach((guard: GuardInfo, id:number) => {
-		guard.sleepMap.forEach((count: number, minute: number) => {
-			if (count > repTime) {
-				repTime = count;
-				mostCommon = minute;
-				mostSlept = id;
-			}
-		})
-	})
-	return mostSlept * mostCommon ;
+	// sort and parse data
+	const record = parseInput(input.split("\n"));
+	// find who most frequently sleep at certain minute
+	const reuslt = mostFrequentlySleptGuard(record);
+	return reuslt.id * reuslt.minute;
 }
