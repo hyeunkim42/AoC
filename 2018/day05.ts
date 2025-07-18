@@ -1,3 +1,20 @@
+const isReactable = (a: string, b: string): boolean =>
+	Math.abs(a.charCodeAt(0) - b.charCodeAt(0)) === 32;
+
+function reactPolymer(input: string): string {
+	const stack: string[] = []; // method로 내부를 변경하는 건 새 할당이 아니라서 const로 선언해도 문제 없음
+	for (const char of input) {
+		const last = stack[stack.length -1];
+
+		if (last && isReactable(last, char)) {
+			stack.pop();
+		} else {
+			stack.push(char);
+		}
+	}
+	return stack.join("");
+}
+
 function reactPolymerMethod1(input: string) {
 	const lowerUpper = Array.from({ length: 26 }, (_, i) => {
 		const lower = String.fromCharCode(97 + i);
@@ -34,25 +51,34 @@ function reactPolymerMethod2(input: string) {
 	return stack.join('');
 }
 
+function removeChar(input: string, char: string): string {
+	const lower = char.toLowerCase();
+	const upper = char.toUpperCase();
+	const result: string[] = [];
+
+	for (const c of input) {
+		if (c !== lower && c !== upper) {
+			result.push(c);
+		}
+	}
+	return result.join("");
+}
+
 export function day5_part1(input: string) {
 	// const result1 = reactPolymerMethod1(input); // 3.42s
-	const result2 = reactPolymerMethod2(input); // 11.47ms
-	// console.log(result2);
+	const result2 = reactPolymer(input); // 11.47ms
 	return result2.length;
 }
 
 export function day5_part2(input: string) {
-	let minLen = input.length;
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	let minLen = input.length;
 
-	for (const c of alphabet) {
-		const pattern = c + "|" + c.toLowerCase();
-		const regexp = new RegExp(pattern, "g");
-		const removedstring = input.replace(regexp, "");
-		const fullyReactedString = reactPolymerMethod2(removedstring);
+	for (const char of alphabet) {
+		const removed = removeChar(input, char);
+		const reacted = reactPolymer(removed);
 
-		if (minLen > fullyReactedString.length)
-			minLen = fullyReactedString.length;
+		minLen = Math.min(minLen, reacted.length);
 	}
 	return minLen;
 }
