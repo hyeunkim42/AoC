@@ -60,7 +60,9 @@ const mostFrequentlySleptGuard = (sleepById: Record<number, SleepPeriod[]>): Gua
 		.map(([id, sleepList]) => frequentlySlept(parseInt(id), sleepList));
 
 	const maxFrequentTime = Math.max(...guardData.map (guard => guard.times));
-	return guardData.find(guard => guard.times === maxFrequentTime)!;
+	const result = guardData.find(guard => guard.times === maxFrequentTime);
+	invariant(result !== undefined, "Can't identify guard with the most frequent sleep minute");
+	return result;
 }
 
 const frequentlySlept = (id: number, sleepList: SleepPeriod[]):GuardSleepInfo => {
