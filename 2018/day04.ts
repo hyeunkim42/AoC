@@ -93,6 +93,6 @@ export function day4_part2(input: string) {
 	// sort and parse data
 	const record = parseInput(input.split("\n"));
 	// find who most frequently sleep at certain minute
-	const reuslt = mostFrequentlySleptGuard(record);
-	return reuslt.id * reuslt.minute;
+	const result = mostFrequentlySleptGuard(record);
+	return result.id * result.minute;
 }
